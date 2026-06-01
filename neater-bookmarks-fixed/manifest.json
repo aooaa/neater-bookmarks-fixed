@@ -1,0 +1,25 @@
+{
+   "background": {
+      "scripts": [ "background.js" ]
+   },
+   "browser_action": {
+      "default_icon": "icon.png",
+      "default_popup": "popup.html"
+   },
+   "default_locale": "en",
+   "description": "Local compatibility-fixed build of Neater Bookmarks.",
+   "icons": {
+      "128": "icon128.png",
+      "16": "icon16.png",
+      "48": "icon48.png"
+   },
+   "manifest_version": 2,
+   "minimum_chrome_version": "9",
+   "name": "Neater Bookmarks Fixed",
+   "omnibox": {
+      "keyword": "*"
+   },
+   "options_page": "options.html",
+   "permissions": [ "\u003Call_urls>", "chrome://favicon/", "bookmarks", "tabs" ],
+   "version": "0.9.7.2"
+}
