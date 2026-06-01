@@ -3,7 +3,7 @@ window.addEventListener('load', init, false);
 function init() {
 	// i18n of text strings
 	$('extName').innerHTML = chrome.i18n.getMessage('extName');
-	$('version').innerHTML = chrome.app.getDetails().version // undocumented method!
+	$('version').innerHTML = chrome.runtime.getManifest().version;
 	$('options').innerHTML = chrome.i18n.getMessage('options');
 	$('general').innerHTML = chrome.i18n.getMessage('general');
 	$('optionClickNewTab').innerHTML = chrome.i18n.getMessage('optionClickNewTab');
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function(){
 		ctx.clearRect(0, 0, 19, 19);
 		ctx.drawImage(customIconPreview, 0, 0, 19, 19);
 		var imageData = ctx.getImageData(0, 0, 19, 19);
-		chrome.browserAction.setIcon({imageData: imageData});
+		chrome.action.setIcon({imageData: imageData});
 		localStorage.customIcon = JSON.stringify(imageData.data);
 	};
 	if (localStorage.customIcon){
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function(){
 	$('reset-button').addEventListener('click', function(){
 		localStorage.clear();
 		delete localStorage.customIcon;
-		chrome.browserAction.setIcon({path: 'icon.png'});
+		chrome.action.setIcon({path: 'icon.png'});
 		customIconPreview.src = 'icon.png';
 		dontLoad = true;
 		location.reload();
@@ -169,5 +169,5 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 
 onerror = function(){
-	chrome.extension.sendRequest({error: [].slice.call(arguments)})
+	chrome.runtime.sendMessage({error: [].slice.call(arguments)});
 };

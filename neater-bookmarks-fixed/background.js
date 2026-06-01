@@ -1,21 +1,12 @@
 var reportError = function(msg, url, line){
-	var txt = '_s=3f41da182f664057b74bd124b53958a0&_r=img'
-		+ '&Msg=' + escape(msg)
-		+ '&URL=' + escape(url)
-		+ '&Line=' + line
-		+ '&Platform=' + escape(navigator.platform)
-		+ '&UserAgent=' + escape(navigator.userAgent);
-	var i = document.createElement('img');
-	i.setAttribute('src', (('https:' == document.location.protocol) ? 'https://errorstack.appspot.com' : 'http://www.errorstack.com') + '/submit?' + txt);
-	document.body.appendChild(i);
-	i.onload = function(){
-		document.body.removeChild(i);
-	};
+	console.error('Neater Bookmarks error:', msg, url, line);
 };
 
-window.onerror = reportError;
+self.onerror = function(msg, url, line){
+	reportError(msg, url, line);
+};
 
-(chrome.runtime && chrome.runtime.onMessage || chrome.extension.onRequest).addListener(function(request){
+chrome.runtime.onMessage.addListener(function(request){
 	if (request.error) reportError.apply(null, request.error);
 });
 
@@ -60,6 +51,9 @@ if (chrome.omnibox){
 		}
 		omniboxValue = value;
 		chrome.bookmarks.search(value, function(results){
+			results = results.filter(function(result){
+				return !!result.url;
+			});
 			if (!results.length){
 				resetSuggest();
 				return;
@@ -110,35 +104,50 @@ if (chrome.omnibox){
 		});
 	});
 
-	chrome.omnibox.onInputEntered.addListener(function(text){
-		if (!text || !firstResult){
-			resetSuggest();
-			return;
+	var selectTab = function(callback){
+		if (chrome.tabs.query){
+			chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
+				if (tabs && tabs[0]) callback(tabs[0]);
+			});
+		} else {
+			chrome.tabs.getSelected(null, callback);
 		}
-		var url = (text == omniboxValue) ? firstResult.url : text;
-		var selectTab = function(callback){
-			if (chrome.tabs.query){
-				chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
-					if (tabs && tabs[0]) callback(tabs[0]);
-				});
-			} else {
-				chrome.tabs.getSelected(null, callback);
-			}
-		};
+	};
+
+	var openUrlInSelectedTab = function(url){
 		selectTab(function(tab){
 			chrome.tabs.update(tab.id, {
 				url: url,
 				active: true
 			});
 		});
-	});
-}
+	};
 
-if (localStorage.customIcon){
-	var canvas = document.createElement('canvas');
-	var ctx = canvas.getContext('2d');
-	var customIcon = JSON.parse(localStorage.customIcon);
-	var imageData = ctx.getImageData(0, 0, 19, 19);
-	for (var key in customIcon) imageData.data[key] = customIcon[key];
-	chrome.browserAction.setIcon({imageData: imageData});
+	chrome.omnibox.onInputEntered.addListener(function(text){
+		if (!text){
+			resetSuggest();
+			return;
+		}
+		if (firstResult && text == omniboxValue){
+			openUrlInSelectedTab(firstResult.url);
+			return;
+		}
+		if (text != omniboxValue){
+			openUrlInSelectedTab(text);
+			return;
+		}
+		chrome.bookmarks.search(text, function(results){
+			results = results.filter(function(result){
+				return !!result.url;
+			});
+			if (!results.length){
+				resetSuggest();
+				return;
+			}
+			results.sort(function(a, b){
+				return b.dateAdded - a.dateAdded;
+			});
+			openUrlInSelectedTab(results[0].url);
+		});
+	});
 }

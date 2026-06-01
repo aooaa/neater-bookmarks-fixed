@@ -3,6 +3,15 @@ window.addEventListener('load', init, false);
 function init() {
 	if (localStorage.popupHeight) document.body.style.height = localStorage.popupHeight + 'px';
 	if (localStorage.popupWidth) document.body.style.width = localStorage.popupWidth + 'px';
+	if (localStorage.customIcon){
+		var canvas = document.createElement('canvas');
+		canvas.width = canvas.height = 19;
+		var ctx = canvas.getContext('2d');
+		var customIcon = JSON.parse(localStorage.customIcon);
+		var imageData = ctx.getImageData(0, 0, 19, 19);
+		for (var key in customIcon) imageData.data[key] = customIcon[key];
+		chrome.action.setIcon({imageData: imageData});
+	}
 };
 
 (function(window){
@@ -12,7 +21,6 @@ function init() {
 	var navigator = window.navigator;
 	var body = document.body;
 	var _m = chrome.i18n.getMessage;
-	var _b = chrome.extension.getBackgroundPage().console;
 	var getSelectedTab = function(callback){
 		if (chrome.tabs.query){
 			chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
@@ -110,7 +118,7 @@ function init() {
 	var generateBookmarkHTML = function(title, url, extras){
 		if (!extras) extras = '';
 		var u = url.htmlspecialchars();
-		var favicon = 'chrome://favicon/' + u;
+		var favicon = 'chrome-extension://' + chrome.runtime.id + '/_favicon/?pageUrl=' + encodeURIComponent(url) + '&size=16';
 		var tooltipURL = url;
 		if (/^javascript:/i.test(url)){
 			if (url.length > 140) tooltipURL = url.slice(0, 140) + '...';
@@ -1522,9 +1530,5 @@ function init() {
 
 onerror = function(){
 	var request = {error: [].slice.call(arguments)};
-	if (chrome.runtime && chrome.runtime.sendMessage) {
-		chrome.runtime.sendMessage(request);
-	} else {
-		chrome.extension.sendRequest(request);
-	}
+	chrome.runtime.sendMessage(request);
 };
